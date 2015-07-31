@@ -1,0 +1,249 @@
+/*.ui-menuitem.ui-widget.ui-corner-all:nth-child(2)
+{
+border-top-width: 2px;
+border-right-width-value: 1px;
+border-bottom-width: 1px;
+border-left-width-value: 1px;
+border-top-style: solid;
+border-right-style-value: solid;
+border-bottom-style: solid;
+border-left-style-value: solid;
+border-top-color: white;
+border-right-color-value: #2CA1CB;
+border-bottom-color: #CCC;
+border-left-color-value: #2CA1CB;
+-moz-box-shadow: 0 0 10px white,0 3px 0 #0E3871,0 5px 0 white,0 5px 3px #CCC;
+-webkit-box-shadow: 0 0 10px white,0 3px 0 #0E3871,0 5px 0 white,0 5px 3px #CCC;
+box-shadow: 0 0 10px white,0 3px 0 #0E3871,0 5px 0 white,0 5px 3px #CCC;
+background-color: #3DB6E3;
+-moz-border-radius: 5px;
+-webkit-border-radius: 5px;
+}
+
+.fileupload-content:after {
+    position: relative;
+    font-weight: bold;
+    left: 11px;
+    font-size: 11pt;
+    color: #CCCCCC;
+    font-family: Calibri;
+    content:"Note: This browser window also allows for you to Drag and Drop files from your computer desktop to this interface for easy uploading.";
+    height: 400px !important;
+    width:100%!important;
+    }
+    
+    .fileupload-content {
+    height: 400px !important;
+    border:0!important;
+    border-size:0!important;
+    
+    }
+
+.fileupload-buttonbar{
+font-size: 8pt;
+
+}
+
+
+
+.fileupload-content {
+    height: 400px !important;
+    border: 0 !important;
+    border-size: 0 !important;
+}
+
+.fileupload-buttonbar {
+    font-size: 8pt;
+}
+
+.ui-button-text{
+font-size:8pt;
+size:8pt;
+border:0!important;
+border-size:0!important;
+font-family: helvetica!important;
+}
+
+.ui-tree{
+	border:0;	
+}
+
+.noTableBorder, .noTableBorder tr, .noTableBorder td {
+    border-color: inherit;
+    border-style: none!important;
+    border-width: 0px!important;
+}
+
+*/
+
+
+/*********************************************************************************/
+.ui-menuitem.ui-widget.ui-corner-all:nth-child(2)
+{
+border-top-width: 2px;
+border-right-width-value: 1px;
+border-bottom-width: 1px;
+border-left-width-value: 1px;
+border-top-style: solid;
+border-right-style-value: solid;
+border-bottom-style: solid;
+border-left-style-value: solid;
+border-top-color: white;
+border-right-color-value: #2CA1CB;
+border-bottom-color: #CCC;
+border-left-color-value: #2CA1CB;
+-moz-box-shadow: 0 0 10px white,0 3px 0 #0E3871,0 5px 0 white,0 5px 3px #CCC;
+-webkit-box-shadow: 0 0 10px white,0 3px 0 #0E3871,0 5px 0 white,0 5px 3px #CCC;
+box-shadow: 0 0 10px white,0 3px 0 #0E3871,0 5px 0 white,0 5px 3px #CCC;
+background-color: #3DB6E3;
+-moz-border-radius: 5px;
+-webkit-border-radius: 5px;
+}
+
+.layout-main {
+	min-width:400px; 
+	min-height:525px; 
+	width:90%; 
+	background-color:#fdf6e3;
+}
+
+.tree-panel {
+	width:400px; 
+/* 	position:relative; */
+/* 	left:5px;  */
+/* 	left:5px;   */
+/* 	height:500px;  */
+/* 	z-index:100; */
+}
+
+.upload-panel {
+	position:relative;
+	left:420px; 
+	width:68%; 
+	top:-505px;  
+	height:500px; 
+	z-index:101; 
+	font-size:10pt; 
+}
+
+    
+    
+.fileupload-content {
+    height: 400px !important;
+    border:0!important;
+    border-size:0!important;
+    
+}
+
+.fileupload-buttonbar{
+font-size: 8pt;
+
+}
+
+
+.fileupload-content{
+  height:400px!important;
+}
+
+.template-upload {
+    font-size: 11pt;
+    size: 11pt;
+    border: 0 !important;
+    border-size: 0 !important;
+    font-family: Calibri;
+}
+
+
+.fileupload-content:after {
+    position: relative;
+    font-weight: bold;
+    left: 11px;
+    font-size: 12pt;
+    color: #CCCCCC;
+    font-family: Calibri;
+    content:
+        "Note: This browser window also allows for you to Drag and Drop files from your computer desktop to this interface for easy uploading.";
+    height: 400px !important;
+    width: 100% !important;
+}
+
+.fileupload-content {
+    height: 400px !important;
+    border: 0 !important;
+    border-size: 0 !important;
+}
+
+.fileupload-buttonbar {
+    font-size: 8pt;
+}
+
+.ui-button-text{
+font-size:8pt;
+size:8pt;
+border:0!important;
+border-size:0!important;
+font-family: helvetica!important;
+}
+
+.ui-tree{
+	border:0!important;	
+}
+
+.noTableBorder, .noTableBorder tr, .noTableBorder td {
+    border-color: inherit;
+    border-style: none!important;
+    border-width: 0px!important;
+}
+
+div.westpanel div.ui-widget-content{
+/*	overflow: hidden!important; */	
+}
+
+div.westpanel div.ui-widget-content .nav{
+  	position: relative;
+    text-align: left;
+    width: 100%;
+}
+
+div.westpanel div.ui-widget-content .nav input{
+  	width: 200px;
+}
+div.westpanel div.ui-widget-content .nav button{
+  	margin: 5px 12px 0;
+}
+
+div.westpanel div.ui-widget-content .waveformTree{
+	width: 100%;
+	height: 300px;
+	overflow: auto;
+}
+
+div.signin{
+	text-align: center;
+}
+
+div.ui-fileupload{
+	height:100%;
+}
+
+td.queuePhaseColumn span , div.summary span, div.summary ul, td.recordName div, td.recordName span{
+	float:left
+}
+
+td.queuePhaseColumn a , div.summary a{
+	float:right;
+}
+
+
+td.queuePhaseColumn span.DONE{
+	font-weight: bold!important;
+	color: green;
+}
+td.queuePhaseColumn span.ERROR{
+	font-weight: bold!important;
+	color: red;
+}
+td.queuePhaseColumn span.WARN{
+	font-weight: bold!important;
+	color: rgb(243, 206, 12);
+}
