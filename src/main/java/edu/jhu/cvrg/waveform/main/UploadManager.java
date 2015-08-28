@@ -24,12 +24,12 @@ limitations under the License.
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.GregorianCalendar;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +48,7 @@ import com.liferay.portal.security.permission.PermissionThreadLocal;
 import com.liferay.portal.service.UserLocalServiceUtil;
 
 import edu.jhu.cvrg.data.dto.UploadStatusDTO;
+import edu.jhu.cvrg.data.enums.FileExtension;
 import edu.jhu.cvrg.data.enums.FileType;
 import edu.jhu.cvrg.data.enums.UploadState;
 import edu.jhu.cvrg.data.factory.Connection;
@@ -57,18 +58,23 @@ import edu.jhu.cvrg.filestore.enums.EnumFileExtension;
 import edu.jhu.cvrg.filestore.exception.FSException;
 import edu.jhu.cvrg.filestore.main.FileStoreFactory;
 import edu.jhu.cvrg.filestore.main.FileStorer;
-import edu.jhu.cvrg.filestore.model.ECGFileMeta;
 import edu.jhu.cvrg.filestore.model.FSFile;
 import edu.jhu.cvrg.filestore.model.FSFolder;
+import edu.jhu.cvrg.waveform.exception.DataExtractException;
 import edu.jhu.cvrg.waveform.exception.UploadFailureException;
+import edu.jhu.cvrg.waveform.model.ECGFileMeta;
 import edu.jhu.cvrg.waveform.model.FileTreeNode;
 import edu.jhu.cvrg.waveform.model.LocalFileTree;
+import edu.jhu.cvrg.waveform.utility.ECGUploadProcessor;
 import edu.jhu.cvrg.waveform.utility.ResourceUtility;
 import edu.jhu.cvrg.waveform.utility.Semaphore;
 import edu.jhu.cvrg.waveform.utility.WebServiceUtility;
+import edu.jhu.icm.enums.DataFileFormat;
 
 public class UploadManager extends Thread{
 
+	public static String conversionStrategy = "Portlet";
+	
 	private Long validationTime; 
 	private EnumFileExtension fileExtension;
 	private UploadStatusDTO uploadStatusDTO;
@@ -87,17 +93,18 @@ public class UploadManager extends Thread{
 		Connection db = null;
 		try {
 			db = ConnectionFactory.createConnection();
-			this.convertUploadedFile(db);
+			this.performFileExtraction(db);
 		} catch (Exception e) {
 			if(db!=null){
-				uploadStatusDTO.setStatus(Boolean.FALSE);
-				uploadStatusDTO.setMessage(e.getMessage());
 				if(uploadStatusDTO.getDocumentRecordId() != null){
 					try {
-						db.storeUploadStatus(uploadStatusDTO);
+						db.updateUploadStatus(uploadStatusDTO.getDocumentRecordId(), null, null, Boolean.FALSE, e.getMessage());
 					} catch (DataStorageException e1) {
 						log.error("Error on update the upload status." + e1.getMessage());
 					}
+				}else{
+					uploadStatusDTO.setStatus(Boolean.FALSE);
+					uploadStatusDTO.setMessage(e.getMessage());
 				}
 			}else{
 				log.error("Exception is:", e);		
@@ -107,7 +114,7 @@ public class UploadManager extends Thread{
 				if(ecgFile != null && ecgFile.getFile() != null){
 					this.getFileStorer().deleteFile(ecgFile.getFile().getId());
 					if(ecgFile.getAuxiliarFiles() != null){
-						for (EnumFileExtension extKey : ecgFile.getAuxiliarFiles().keySet()) {
+						for (FileExtension extKey : ecgFile.getAuxiliarFiles().keySet()) {
 							this.getFileStorer().deleteFile(ecgFile.getAuxiliarFiles().get(extKey).getId());
 						}
 					}
@@ -176,9 +183,40 @@ public class UploadManager extends Thread{
 				log.error("Exception is:", e);
 			}
 		}
+		
 		if (performConvesion) {
-			validationTime = java.lang.System.currentTimeMillis() - validationTime;
-			this.ecgFile= ecgFile; 
+			
+			int auxiliarFilesCount = ecgFile.getAuxiliarFiles() != null ? ecgFile.getAuxiliarFiles().values().size() : 0;
+			long[] filesId = new long[1+auxiliarFilesCount];
+			filesId[0] = ecgFile.getFile().getId();
+			if(ecgFile.getAuxiliarFiles() != null){
+				for (int i = 0; i <  ecgFile.getAuxiliarFiles().values().size(); i++) {
+					FSFile auxFile = ecgFile.getAuxiliarFiles().values().iterator().next();
+					filesId[i+1] = auxFile.getId();				
+				}
+			}
+			
+			try {
+				Connection db = ConnectionFactory.createConnection();
+				
+				Long docId = db.initalDocumentStore(userId, ecgFile.getRecordName(), ecgFile.getSubjectID(), ecgFile.getFileType().ordinal(), ecgFile.getTreePath(), new GregorianCalendar(), filesId);
+				ecgFile.setDocumentId(docId);
+				
+				this.ecgFile = ecgFile;
+				validationTime = java.lang.System.currentTimeMillis() - validationTime;
+				
+				uploadStatusDTO = new UploadStatusDTO(docId, null, null, validationTime, null, null, null);
+				uploadStatusDTO.setRecordName(ecgFile.getSubjectID());
+				
+				db.storeUploadStatus(uploadStatusDTO);
+				
+			} catch (DataStorageException e) {
+				message = e.getMessage();
+				validationTime = null;
+			}finally{
+				
+			}
+			
 		} else {
 			validationTime = null;
 			if(message != null){
@@ -186,9 +224,11 @@ public class UploadManager extends Thread{
 			}
 		}
 
-		uploadStatusDTO = new UploadStatusDTO(null, null, null, validationTime,	null, null, message);
-		uploadStatusDTO.setRecordName(ecgFile.getSubjectID());
-
+		if(uploadStatusDTO == null){
+			uploadStatusDTO = new UploadStatusDTO(null, null, null, validationTime,	null, null, message);
+			uploadStatusDTO.setRecordName(ecgFile.getSubjectID());
+		}
+		
 		return uploadStatusDTO;
 	}
 		
@@ -410,41 +450,41 @@ public class UploadManager extends Thread{
 		String ext2 = null;
 		String message = null;
 		
-		if(EnumFileExtension.HEA.equals(fileExtension)){
+		if(FileExtension.HEA.equals(fileExtension)){
 			ext1 = ".dat";
 			aux1 = fileStorer.getFileByNameAndFolder(ecgFile.getFile().getParentId(), fileNameToFind + ext1, false);
-			ecgFile.addAuxFile(EnumFileExtension.DAT, aux1);
+			ecgFile.addAuxFile(FileExtension.DAT, aux1);
 			
 			haveThreeFiles = hasXYZ(ecgFile.getFile());
 			
 			if(haveThreeFiles){
 				ext2 = ".xyz";
 				aux2 = fileStorer.getFileByNameAndFolder(ecgFile.getFile().getParentId(), fileNameToFind + ext2, false);
-				ecgFile.addAuxFile(EnumFileExtension.XYZ, aux2);
+				ecgFile.addAuxFile(FileExtension.XYZ, aux2);
 			}
 			
-		}else if(EnumFileExtension.DAT.equals(fileExtension)){
+		}else if(FileExtension.DAT.equals(fileExtension)){
 			ext1 = ".hea";
 			aux1 = fileStorer.getFileByNameAndFolder(ecgFile.getFile().getParentId(), fileNameToFind + ext1, false);
-			ecgFile.addAuxFile(EnumFileExtension.HEA, aux1);
+			ecgFile.addAuxFile(FileExtension.HEA, aux1);
 			
 			haveThreeFiles = aux1 != null && hasXYZ(aux1);
 			
 			if(haveThreeFiles){
 				ext2 = ".xyz";
 				aux2 = fileStorer.getFileByNameAndFolder(ecgFile.getFile().getParentId(), fileNameToFind + ext2, false);
-				ecgFile.addAuxFile(EnumFileExtension.XYZ, aux2);
+				ecgFile.addAuxFile(FileExtension.XYZ, aux2);
 			}
 			
-		}else if(EnumFileExtension.XYZ.equals(fileExtension)){
+		}else if(FileExtension.XYZ.equals(fileExtension)){
 			ext1 = ".hea";
 			haveThreeFiles = true;
 			aux1 = fileStorer.getFileByNameAndFolder(ecgFile.getFile().getParentId(), fileNameToFind + ext1, false);
-			ecgFile.addAuxFile(EnumFileExtension.HEA, aux1);
+			ecgFile.addAuxFile(FileExtension.HEA, aux1);
 			
 			ext2 = ".dat";
 			aux2 = fileStorer.getFileByNameAndFolder(ecgFile.getFile().getParentId(), fileNameToFind + ext2, false);
-			ecgFile.addAuxFile(EnumFileExtension.DAT, aux2);
+			ecgFile.addAuxFile(FileExtension.DAT, aux2);
 		}
 		
 		
@@ -492,153 +532,136 @@ public class UploadManager extends Thread{
 		}
 	}
 
-	public void convertUploadedFile(Connection db) throws UploadFailureException {
+	private void extractDataByPortlet()  throws UploadFailureException {
 		
-		String method = "na";
-		boolean correctFormat = true;
+		try {
+			
+			ECGUploadProcessor processor = new ECGUploadProcessor();
+			processor.execute(ecgFile);
+			
+		} catch (DataExtractException e) {
+			throw new UploadFailureException(e.getMessage(), e);
+		}
+		
+	}
+	
+	private void extractDataByWS()  throws UploadFailureException {
 		
 		initializeLiferayPermissionChecker(userId);
 		
-		switch (ecgFile.getFileType()) {
-			case WFDB:			method = "wfdbToRDT"; 			break;
-			case HL7:			method = "hL7";					break;
-			case PHILIPS_103:	method = "philips103ToWFDB";	break;
-			case PHILIPS_104:	method = "philips104ToWFDB";	break;
-			case SCHILLER:	    method = "SCHILLERToWFDB";   	break;
-			case MUSE_XML:		method = "museXML";				break;
-			default:	
-				switch (fileExtension) {
-					case RDT:	method = "rdtToWFDB16";					break;
-					case XYZ:	method = "wfdbToRDT"; 		ecgFile.setFileType(FileType.WFDB);		break;
-					case ZIP:	method = "processUnZipDir";	/* leave the fileFormat tag alone*/ break;
-					case TXT:	method = evaluateTextFile(ecgFile.getFile().getName());	/*currently a stub method -  will eventually process GE MUSE Text files*/	break;
-					case CSV:	method = "xyFile";						break;
-					case NAT:	method = "na";							break;
-					case GTM:	method = "na";							break;
-					default:	method = "geMuse";						break;
-				}
+		if(ResourceUtility.getNodeConversionService().equals("0")){
+			log.error("Missing Web Service Configuration.  Cannot run File Conversion Web Service.");
+			throw new UploadFailureException("Cannot run File Conversion Web Service. Missing Web Service Configuration.");
+		}
+
+		String method = "extractData";
+		
+		log.info("method = " + method);
+		
+		LinkedHashMap<String, String> parameterMap = new LinkedHashMap<String, String>();
+	
+		parameterMap.put("userId", 		String.valueOf(userId));
+		parameterMap.put("documentId", 	String.valueOf(ecgFile.getDocumentId()));
+		parameterMap.put("recordName", 	ecgFile.getRecordName());
+		parameterMap.put("subjectId", 	ecgFile.getRecordName());
+		parameterMap.put("studyID", 	ecgFile.getRecordName());
+		parameterMap.put("datatype", 	ecgFile.getDatatype());
+		
+		parameterMap.put("filename", 	ecgFile.getFile().getName());
+		parameterMap.put("treePath", 	ecgFile.getTreePath());
+		parameterMap.put("fileSize", 	String.valueOf(ecgFile.getFile().getFileSize()));
+		parameterMap.put("verbose", 	String.valueOf(false));
+		parameterMap.put("service", 	"DataConversion");
+		
+		parameterMap.put("companyId", 	String.valueOf(companyId));
+		parameterMap.put("groupId", 	String.valueOf(groupId));
+		parameterMap.put("folderId", 	String.valueOf(ecgFile.getFile().getParentId()));
+		
+		//ENUMS FILETYPE AND DATAFILEFORMAT SHOULD BE SYNCRONIZED
+		parameterMap.put("inputFormat",  String.valueOf(ecgFile.getFileType().ordinal()));
+		parameterMap.put("outputFormat", String.valueOf(DataFileFormat.WFDB_16.ordinal()));
+		
+		LinkedHashMap<String, FSFile> filesMap = new LinkedHashMap<String, FSFile>();
+		
+		switch (fileExtension) {
+		case HEA:
+			filesMap.put("contentFile", ecgFile.getAuxiliarFiles().get(EnumFileExtension.DAT));
+			filesMap.put("headerFile", ecgFile.getFile());
+			if(ecgFile.getAuxiliarFiles().size() > 1){
+				filesMap.put("extraFile", ecgFile.getAuxiliarFiles().get(EnumFileExtension.XYZ));
+			}
+			break;
+		case DAT:
+			filesMap.put("contentFile", ecgFile.getFile());
+			filesMap.put("headerFile", ecgFile.getAuxiliarFiles().get(EnumFileExtension.HEA));
+			if(ecgFile.getAuxiliarFiles().size() > 1){
+				filesMap.put("extraFile", ecgFile.getAuxiliarFiles().get(EnumFileExtension.XYZ));
+			}
+			break;
+		case XYZ:
+			filesMap.put("extraFile", ecgFile.getFile());
+			filesMap.put("contentFile", ecgFile.getAuxiliarFiles().get(EnumFileExtension.DAT));
+			filesMap.put("headerFile", ecgFile.getAuxiliarFiles().get(EnumFileExtension.HEA));
+			break;
+		default:
+			filesMap.put("contentFile", ecgFile.getFile());
 			break;
 		}
 		
+
+		log.info("Calling Web Service with " + ecgFile.getFile().getName() + ".");
+		
+		OMElement result = WebServiceUtility.callWebService(parameterMap, false, method, ResourceUtility.getNodeConversionService(), null, filesMap);
+		
+		if(result == null){
+			throw new UploadFailureException("Webservice return is null.");
+		}
+		
+		Map<String, OMElement> params = WebServiceUtility.extractParams(result);
+		
+		if(params != null){
+			if(params.get("documentId") != null && params.get("documentId").getText() != null){
+				Long.valueOf(params.get("documentId").getText());
+			}else if(params.get("errorMessage").getText() != null && !params.get("errorMessage").getText().isEmpty()){
+				throw new UploadFailureException(params.get("errorMessage").getText());
+			}
+		}
+	}
+	
+	public void performFileExtraction(Connection db) throws UploadFailureException {
+		
 		if(ecgFile.getFileType() != null){
-			if(EnumFileExtension.HEA.equals(fileExtension) || EnumFileExtension.DAT.equals(fileExtension) || EnumFileExtension.XYZ.equals(fileExtension)) {
-				
-				FSFile headerFile = null;
-				if(EnumFileExtension.HEA.equals(fileExtension)){
-					headerFile = ecgFile.getFile();	
-				}else{
-					headerFile = ecgFile.getAuxiliarFiles().get(EnumFileExtension.HEA);
-				}
-				// Parse the locally held header file
-				correctFormat = checkWFDBHeader(headerFile);
+			Long docId = ecgFile.getDocumentId();
+			
+			long conversionTime = java.lang.System.currentTimeMillis();
+			
+			boolean useWS = !"Portlet".equals(conversionStrategy);
+			
+			if(useWS){
+				extractDataByWS();
+			}else{
+				extractDataByPortlet();
 			}
 			
-			if(!correctFormat) {
-				throw new UploadFailureException("The header file has not been parsed properly");
-			}
+			conversionTime = java.lang.System.currentTimeMillis() - conversionTime;
 			
-			log.info("method = " + method);
-			
-			if(ResourceUtility.getNodeConversionService().equals("0")){
-				log.error("Missing Web Service Configuration.  Cannot run File Conversion Web Service.");
-				throw new UploadFailureException("Cannot run File Conversion Web Service. Missing Web Service Configuration.");
-			}
-	
-			if(!method.equals("na")){
-			
-				LinkedHashMap<String, String> parameterMap = new LinkedHashMap<String, String>();
-			
-				parameterMap.put("userid", 		String.valueOf(userId));
-				parameterMap.put("subjectid", 	ecgFile.getRecordName());
-				parameterMap.put("filename", 	ecgFile.getFile().getName());
-				parameterMap.put("studyID", 	ecgFile.getRecordName());
-				parameterMap.put("datatype", 	ecgFile.getDatatype());
-				parameterMap.put("treePath", 	ecgFile.getTreePath());
-				parameterMap.put("recordName", 	ecgFile.getRecordName());
-				parameterMap.put("fileSize", 	String.valueOf(ecgFile.getFile().getFileSize()));
-				parameterMap.put("fileFormat", 	String.valueOf(ecgFile.getFileType().ordinal()));
-				
-				parameterMap.put("verbose", 	String.valueOf(false));
-				parameterMap.put("service", 	"DataConversion");
-				
-				parameterMap.put("companyId", 	String.valueOf(companyId));
-				parameterMap.put("groupId", 	String.valueOf(groupId));
-				parameterMap.put("folderId", 	String.valueOf(ecgFile.getFile().getParentId()));
-				
-				LinkedHashMap<String, FSFile> filesMap = new LinkedHashMap<String, FSFile>();
-				
-				switch (fileExtension) {
-				case HEA:
-					filesMap.put("contentFile", ecgFile.getAuxiliarFiles().get(EnumFileExtension.DAT));
-					filesMap.put("headerFile", ecgFile.getFile());
-					if(ecgFile.getAuxiliarFiles().size() > 1){
-						filesMap.put("extraFile", ecgFile.getAuxiliarFiles().get(EnumFileExtension.XYZ));
-					}
-					break;
-				case DAT:
-					filesMap.put("contentFile", ecgFile.getFile());
-					filesMap.put("headerFile", ecgFile.getAuxiliarFiles().get(EnumFileExtension.HEA));
-					if(ecgFile.getAuxiliarFiles().size() > 1){
-						filesMap.put("extraFile", ecgFile.getAuxiliarFiles().get(EnumFileExtension.XYZ));
-					}
-					break;
-				case XYZ:
-					filesMap.put("extraFile", ecgFile.getFile());
-					filesMap.put("contentFile", ecgFile.getAuxiliarFiles().get(EnumFileExtension.DAT));
-					filesMap.put("headerFile", ecgFile.getAuxiliarFiles().get(EnumFileExtension.HEA));
-					break;
-				default:
-					filesMap.put("contentFile", ecgFile.getFile());
-					break;
-				}
-				
-	
-				log.info("Calling Web Service with " + ecgFile.getFile().getName() + ".");
-				
-				long conversionTime = java.lang.System.currentTimeMillis();
-				
-				OMElement result = WebServiceUtility.callWebService(parameterMap, false, method, ResourceUtility.getNodeConversionService(), null, filesMap);
-				
-				conversionTime = java.lang.System.currentTimeMillis() - conversionTime;
-				
-				if(result == null){
-					throw new UploadFailureException("Webservice return is null.");
-				}
-				
-				Map<String, OMElement> params = WebServiceUtility.extractParams(result);
-				
-				if(params == null){
-					throw new UploadFailureException("Webservice return params are null.");
-				}else{
-					if(params.get("documentId") != null && params.get("documentId").getText() != null){
-						long docId = Long.parseLong(params.get("documentId").getText());
-						
-						log.info("["+docId+"]The runtime file validation is = " + validationTime + " milliseconds");
-						log.info("["+docId+"]The runtime for WS tranfer, read and store the document on database is = " + conversionTime + " milliseconds");
-						
-						uploadStatusDTO.setDocumentRecordId(docId);
-						uploadStatusDTO.setTransferReadTime(conversionTime);
-						
-						try {
-							if(ecgFile.isVirtual()){
-								db.storeVirtualDocument(userId, docId, virtualNodeId, ecgFile.getRecordName());
-								db.updateVirtualDocumentReferences(docId, ecgFile.getRecordName());
-							}
-						} catch (DataStorageException e) {
-							throw new UploadFailureException("Unable to persist the shared document record.", e);
-						}
-						
-						try {
-							db.storeUploadStatus(uploadStatusDTO);
-						} catch (DataStorageException e) {
-							throw new UploadFailureException("Unable to persist the upload status.", e);		
-						}
-						
-					}else if(params.get("errorMessage").getText() != null && !params.get("errorMessage").getText().isEmpty()){
-						throw new UploadFailureException(params.get("errorMessage").getText());
-					}	
+			if(docId != null){
 					
+				log.info("["+docId+"]The runtime file validation is = " + validationTime + " milliseconds");
+				log.info("["+docId+"]The runtime for WS tranfer, read and store the document on database is = " + conversionTime + " milliseconds");
+				
+				uploadStatusDTO.setDocumentRecordId(docId);
+				
+				try {
+					if(ecgFile.isVirtual()){
+						db.storeVirtualDocument(userId, docId, virtualNodeId, ecgFile.getRecordName());
+						db.updateVirtualDocumentReferences(docId, ecgFile.getRecordName());
+					}
+				} catch (DataStorageException e) {
+					throw new UploadFailureException("Unable to persist the shared document record.", e);
 				}
+			}else{
+				throw new UploadFailureException("Conversion error");
 			}
 		}else{
 			throw new UploadFailureException("Unidentified file format/type.");
@@ -659,120 +682,13 @@ public class UploadManager extends Thread{
 	}
 	
 	
-	//TODO [VILARDO] TRY TO MOVE TO WEB SERVICE
-	private boolean checkWFDBHeader(FSFile headerFile) {
-		
-		// To find out more about the WFDB header format, go to:
-		// http://www.physionet.org/physiotools/wag/header-5.htm
-		//
-		// The goal is to extract the metadata information needed without the need for using the physionet libraries
-		
-		boolean returnValue = false;
-		DataInputStream wfdbInputStream = null;
-		BufferedReader br = null;
-		
-		try{
-			InputStream inputStream = new ByteArrayInputStream(headerFile.getFileDataAsBytes());
-			wfdbInputStream = new DataInputStream(inputStream);
-		    br = new BufferedReader(new InputStreamReader(wfdbInputStream));
-		    String strLine;
-		    String[] words;
-		    //Read File Line By Line
-		    
-		    while ((strLine = br.readLine()) != null)   {
-		      // Print the content on the console
-		    	
-		    	if(strLine.length()>0) {
-		    		
-		    		// check to see if this line is a comment or not
-		    		if(!strLine.startsWith("#")) {
-
-		    			returnValue = true;
-		    			break;
-		    		}
-		    	}
-		    }
-		    
-		    // Begin parsing out different sections of the WFDB header file.  The array size should be two or more.
-		    words = strLine.split("\\s");
-		    
-		    if(words != null && words.length>=2) {
-		    	
-		    	// Step 1:  Extract record name.  There is more after the "/", but it will be parsed out and ignored
-		    	String[] firstField = words[0].split("/");
-		    	if(firstField != null && firstField.length>0) {
-		    		// validate the record name here against the record name in the metadata
-		    		if(!(firstField[0].equals(ecgFile.getRecordName()))) {
-		    			br.close();
-		    			return false;
-		    		}
-		    	}
-		    	else {
-		    		br.close();
-		    		return false;
-		    	}
-		    	
-		    	// Step 2:  Get the number of leads
-		    	int numLeads = Integer.parseInt(words[1]);
-		    	ecgFile.setChannels(numLeads);
-		    	
-		    	// Step 3:  If there is a third section, parse it out.  The sampling frequency will be the first value that 
-		    	//          is extracted from it.  If it is not present, the default is 250 (already set in metadata class)
-		    	if(words.length >= 3) {
-			    	String[] thirdField = words[2].split("/");
-			    	if(thirdField != null && thirdField.length>0) {
-			    		float sampFreq = Float.parseFloat(thirdField[0]);
-			    		ecgFile.setSampFrequency(sampFreq);
-			    	}
-		    		
-		    		// Step 4:  If there is a fourth field, then that is the number of samples per signal
-		    		//          After that, we do not need anything else.
-		    		if(words.length >= 4) {
-		    			int numPoints = Integer.parseInt(words[3]);
-		    			
-		    			// if zero, then ignore
-		    			if(numPoints>0) {
-							ecgFile.setNumberOfPoints(numPoints);
-		    			}
-		    		}		
-		    	}
-		    }
-		    else {  //This is an improperly formed header file.  There should be at least two fields, separated by spaces
-		    	returnValue = false;
-		    }
-		    
-			if(wfdbInputStream != null) {
-				wfdbInputStream.close();
-			}
-			if(br != null) {
-				br.close();
-			}
-
-		}catch (Exception e){
-			log.error("Error: " + e.getMessage());
-			try {
-				if(wfdbInputStream != null) {
-					wfdbInputStream.close();
-				}
-				if(br != null) {
-					br.close();
-				}
-			} catch (IOException e2) {
-				log.error("Error: " + e2.getMessage());
-			}
-			returnValue = false;
-			return returnValue;
-		}	
-		return returnValue;
-	}
-	
 	private void initializeLiferayPermissionChecker(long userId) throws UploadFailureException {
 		try{
 			PrincipalThreadLocal.setName(userId);
 			User user = UserLocalServiceUtil.getUserById(userId);
 	        PermissionChecker permissionChecker = PermissionCheckerFactoryUtil.create(user);
 	        PermissionThreadLocal.setPermissionChecker(permissionChecker);
-		}catch (Exception e){
+	    }catch (Exception e){
 			throw new UploadFailureException("Fail on permission checker initialization. [userId="+userId+"]", e);
 		}
 		
@@ -857,7 +773,7 @@ public class UploadManager extends Thread{
 
     	byte[] fileBytes = new byte[(int)fileSize];
 
-    	ECGFileMeta ecgFile = new ECGFileMeta(subjectId, recordName, dataType, studyID);
+    	ECGFileMeta ecgFile = new ECGFileMeta(subjectId, recordName, dataType, studyID, ResourceUtility.getCurrentUserId());
     	
 		try {
 			file.read(fileBytes);
