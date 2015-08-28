@@ -247,3 +247,14 @@ td.queuePhaseColumn span.WARN{
 	font-weight: bold!important;
 	color: rgb(243, 206, 12);
 }
+
+
+/*EDIT PAGE*/
+
+table.ui-selectoneradio td{
+	padding: 0px 10px 0px 0px;
+}
+
+td.strategyColumn{
+	padding: 0px 10px 0px 0px;
+}

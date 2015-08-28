@@ -9,7 +9,19 @@
 	xmlns:ui="http://java.sun.com/jsf/facelets">
 	<h:head />
 	<h:body>
-
-		<ui:include src="edittabs.xhtml" />
+		
+		<h:form id="updateConfigEdit">
+			
+			<p:growl id="msg" />
+			
+			<h:panelGrid columns="2" style="margin-bottom:10px" columnClasses="strategyColumn">
+		        <p:outputLabel for="strategy" value="Conversion strategy: " />
+		        <p:selectOneRadio id="strategy" value="#{editUploadBacking.conversionStrategy}" columns="2" >
+		            <f:selectItem itemLabel="Portlet" itemValue="Portlet" />
+		            <f:selectItem itemLabel="Web Services" itemValue="Web Services" />
+		        </p:selectOneRadio>
+		    </h:panelGrid>
+		    <p:commandButton action="#{editUploadBacking.updateStrategy}" value="Save" icon="ui-icon-check" update="msg"/>
+		</h:form>
 	</h:body>
 </f:view>
