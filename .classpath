@@ -7,7 +7,7 @@
   <classpathentry kind="var" path="M2_REPO/javax/portlet/portlet-api/2.0/portlet-api-2.0.jar"/>
   <classpathentry kind="var" path="M2_REPO/javax/servlet/servlet-api/2.5/servlet-api-2.5.jar"/>
   <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-  <classpathentry kind="var" path="M2_REPO/edu/jhu/cvrg/waveform/waveform-utilities/1.0-SNAPSHOT/waveform-utilities-1.0-SNAPSHOT.jar"/>
+  <classpathentry kind="var" path="M2_REPO/edu/jhu/cvrg/waveform/waveform-utilities/1.2-SNAPSHOT/waveform-utilities-1.2-SNAPSHOT.jar"/>
   <classpathentry kind="var" path="M2_REPO/org/apache/ws/commons/axiom/axiom-api/1.2.7/axiom-api-1.2.7.jar"/>
   <classpathentry kind="var" path="M2_REPO/org/apache/geronimo/specs/geronimo-activation_1.1_spec/1.0.1/geronimo-activation_1.1_spec-1.0.1.jar"/>
   <classpathentry kind="var" path="M2_REPO/org/apache/geronimo/specs/geronimo-javamail_1.4_spec/1.2/geronimo-javamail_1.4_spec-1.2.jar"/>
@@ -26,7 +26,7 @@
   <classpathentry kind="var" path="M2_REPO/com/sun/faces/jsf-impl/2.1.3-b02/jsf-impl-2.1.3-b02.jar"/>
   <classpathentry kind="var" path="M2_REPO/com/liferay/faces/liferay-faces-util/3.1.0-ga1/liferay-faces-util-3.1.0-ga1.jar"/>
   <classpathentry kind="var" path="M2_REPO/com/liferay/portal/portal-service/6.1.1/portal-service-6.1.1.jar" sourcepath="M2_REPO/com/liferay/portal/portal-service/6.1.1/portal-service-6.1.1-sources.jar"/>
-  <classpathentry kind="var" path="M2_REPO/edu/jhu/icm/cvrg-ecg-converter/1.5.3-SNAPSHOT/cvrg-ecg-converter-1.5.3-SNAPSHOT.jar"/>
+  <classpathentry kind="var" path="M2_REPO/edu/jhu/icm/cvrg-ecg-converter/1.5.6-SNAPSHOT/cvrg-ecg-converter-1.5.6-SNAPSHOT.jar"/>
   <classpathentry kind="var" path="M2_REPO/log4j/log4j/1.2.17/log4j-1.2.17.jar"/>
   <classpathentry kind="var" path="M2_REPO/jfree/jfreechart/1.0.9/jfreechart-1.0.9.jar"/>
   <classpathentry kind="var" path="M2_REPO/jfree/jcommon/1.0.12/jcommon-1.0.12.jar"/>

@@ -611,7 +611,7 @@ public class UploadManager extends Thread{
 
 		log.info("Calling Web Service with " + ecgFile.getFile().getName() + ".");
 		
-		OMElement result = WebServiceUtility.callWebService(parameterMap, false, method, ResourceUtility.getNodeConversionService(), null, filesMap);
+		OMElement result = WebServiceUtility.callWebService(parameterMap, method, ResourceUtility.getNodeConversionService(), null, filesMap);
 		
 		if(result == null){
 			throw new UploadFailureException("Webservice return is null.");

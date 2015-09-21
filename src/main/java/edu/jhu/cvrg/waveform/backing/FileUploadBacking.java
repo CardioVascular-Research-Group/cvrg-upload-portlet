@@ -108,8 +108,7 @@ public class FileUploadBacking extends BackingBean implements Serializable{
 
 	
     public void onComplete() {
-    	fileTree.initialize(this.getUser().getUserId());
-    	//fileTree.refresh();
+    	fileTree.refresh();
     	messages.clear();
     }
     
