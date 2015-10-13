@@ -22,10 +22,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 
 import javax.annotation.PostConstruct;
 import javax.faces.application.FacesMessage;
@@ -43,11 +47,13 @@ import org.primefaces.model.UploadedFile;
 
 import com.liferay.portal.model.User;
 
+import edu.jhu.cvrg.data.dto.DocumentRecordDTO;
 import edu.jhu.cvrg.data.dto.UploadStatusDTO;
 import edu.jhu.cvrg.data.enums.UploadState;
 import edu.jhu.cvrg.data.factory.Connection;
 import edu.jhu.cvrg.data.factory.ConnectionFactory;
 import edu.jhu.cvrg.data.util.DataStorageException;
+import edu.jhu.cvrg.timeseriesstore.opentsdb.TimeSeriesStorer;
 import edu.jhu.cvrg.waveform.main.UploadManager;
 import edu.jhu.cvrg.waveform.model.FileTreeNode;
 import edu.jhu.cvrg.waveform.model.LocalFileTree;
@@ -327,6 +333,8 @@ public class FileUploadBacking extends BackingBean implements Serializable{
 
 	private void deleteSubNodes(FileTreeNode node, Connection db)throws DataStorageException {
 		if(node.isDocument()){
+			DocumentRecordDTO doc = db.getDocumentRecordById(node.getDocumentRecordId());
+			this.deleteTimeSeries(doc);
 			db.deleteDocumentRecord(this.getUser().getUserId(), node.getDocumentRecordId());
 		}else{
 			List<TreeNode> children = node.getChildren();
@@ -334,6 +342,31 @@ public class FileUploadBacking extends BackingBean implements Serializable{
 				deleteSubNodes((FileTreeNode)subNode, db);	
 			}
 		}
+	}
+	
+	private void deleteTimeSeries(DocumentRecordDTO doc) {
+		String host = "10.162.38.31";
+		
+		Calendar zeroTime = new GregorianCalendar(2015, Calendar.JANUARY, 1);
+		zeroTime.setTimeZone(TimeZone.getTimeZone("US/Eastern"));
+		
+		final long zeroTimeInMillis = zeroTime.getTimeInMillis(); 
+		long timeGapBetweenPoints = 1000L/Double.valueOf(doc.getSamplingRate()).longValue() * 1000;
+		long endEpoch = zeroTimeInMillis + ( doc.getSamplesPerChannel() * timeGapBetweenPoints);
+		
+		HashMap<String, String> tags = new HashMap<String, String>();
+		tags.put("timeseriesid", doc.getTimeSeriesId());
+		
+		String[] leadNames = doc.getLeadNames().split(",");
+		List<String> metrics = new ArrayList<String>();
+		
+		for (int channel = 0; channel < leadNames.length; channel++) {
+			String leadName = leadNames[channel];
+			metrics.add("ecg."+leadName.trim()+".uv");		
+		}
+
+		TimeSeriesStorer.deleteTimeSeries(host, zeroTimeInMillis, endEpoch, metrics, tags, "avilard4", "23ram24a@");
+		
 	}
 
 }
