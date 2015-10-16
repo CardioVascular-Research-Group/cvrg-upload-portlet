@@ -345,8 +345,6 @@ public class FileUploadBacking extends BackingBean implements Serializable{
 	}
 	
 	private void deleteTimeSeries(DocumentRecordDTO doc) {
-		String host = "10.162.38.31";
-		
 		Calendar zeroTime = new GregorianCalendar(2015, Calendar.JANUARY, 1);
 		zeroTime.setTimeZone(TimeZone.getTimeZone("US/Eastern"));
 		
@@ -365,7 +363,7 @@ public class FileUploadBacking extends BackingBean implements Serializable{
 			metrics.add("ecg."+leadName.trim()+".uv");		
 		}
 
-		TimeSeriesStorer.deleteTimeSeries(host, zeroTimeInMillis, endEpoch, metrics, tags, "avilard4", "23ram24a@");
+		TimeSeriesStorer.deleteTimeSeries(ResourceUtility.getOpenTsdbHost(), zeroTimeInMillis, endEpoch, metrics, tags, ResourceUtility.getOpenTsdbSshUser(), ResourceUtility.getOpenTsdbSshPassword());
 		
 	}
 
