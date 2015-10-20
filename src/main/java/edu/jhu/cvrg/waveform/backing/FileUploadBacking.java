@@ -333,38 +333,13 @@ public class FileUploadBacking extends BackingBean implements Serializable{
 
 	private void deleteSubNodes(FileTreeNode node, Connection db)throws DataStorageException {
 		if(node.isDocument()){
-			DocumentRecordDTO doc = db.getDocumentRecordById(node.getDocumentRecordId());
-			this.deleteTimeSeries(doc);
-			db.deleteDocumentRecord(this.getUser().getUserId(), node.getDocumentRecordId());
+			db.markDocumentToDelete(node.getDocumentRecordId());
 		}else{
 			List<TreeNode> children = node.getChildren();
 			for (TreeNode subNode : children) {
 				deleteSubNodes((FileTreeNode)subNode, db);	
 			}
 		}
-	}
-	
-	private void deleteTimeSeries(DocumentRecordDTO doc) {
-		Calendar zeroTime = new GregorianCalendar(2015, Calendar.JANUARY, 1);
-		zeroTime.setTimeZone(TimeZone.getTimeZone("US/Eastern"));
-		
-		final long zeroTimeInMillis = zeroTime.getTimeInMillis(); 
-		long timeGapBetweenPoints = 1000L/Double.valueOf(doc.getSamplingRate()).longValue() * 1000;
-		long endEpoch = zeroTimeInMillis + ( doc.getSamplesPerChannel() * timeGapBetweenPoints);
-		
-		HashMap<String, String> tags = new HashMap<String, String>();
-		tags.put("timeseriesid", doc.getTimeSeriesId());
-		
-		String[] leadNames = doc.getLeadNames().split(",");
-		List<String> metrics = new ArrayList<String>();
-		
-		for (int channel = 0; channel < leadNames.length; channel++) {
-			String leadName = leadNames[channel];
-			metrics.add("ecg."+leadName.trim()+".uv");		
-		}
-
-		TimeSeriesStorer.deleteTimeSeries(ResourceUtility.getOpenTsdbHost(), zeroTimeInMillis, endEpoch, metrics, tags, ResourceUtility.getOpenTsdbSshUser(), ResourceUtility.getOpenTsdbSshPassword());
-		
 	}
 
 }
