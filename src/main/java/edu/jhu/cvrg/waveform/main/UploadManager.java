@@ -73,8 +73,6 @@ import edu.jhu.icm.enums.DataFileFormat;
 
 public class UploadManager extends Thread{
 
-	public static String conversionStrategy = "Portlet";
-	
 	private Long validationTime; 
 	private EnumFileExtension fileExtension;
 	private UploadStatusDTO uploadStatusDTO;
@@ -186,13 +184,12 @@ public class UploadManager extends Thread{
 		
 		if (performConvesion) {
 			
-			int auxiliarFilesCount = ecgFile.getAuxiliarFiles() != null ? ecgFile.getAuxiliarFiles().values().size() : 0;
-			long[] filesId = new long[1+auxiliarFilesCount];
-			filesId[0] = ecgFile.getFile().getId();
+			List<Long> filesId = new ArrayList<Long>();
+			filesId.add(ecgFile.getFile().getId());
 			if(ecgFile.getAuxiliarFiles() != null){
 				for (int i = 0; i <  ecgFile.getAuxiliarFiles().values().size(); i++) {
 					FSFile auxFile = ecgFile.getAuxiliarFiles().values().iterator().next();
-					filesId[i+1] = auxFile.getId();				
+					filesId.add(auxFile.getId());				
 				}
 			}
 			
@@ -537,7 +534,7 @@ public class UploadManager extends Thread{
 		try {
 			
 			ECGUploadProcessor processor = new ECGUploadProcessor();
-			processor.execute(ecgFile);
+			processor.execute(ecgFile, ResourceUtility.getOpenTsdbHost());
 			
 		} catch (DataExtractException e) {
 			throw new UploadFailureException(e.getMessage(), e);
@@ -580,6 +577,7 @@ public class UploadManager extends Thread{
 		//ENUMS FILETYPE AND DATAFILEFORMAT SHOULD BE SYNCRONIZED
 		parameterMap.put("inputFormat",  String.valueOf(ecgFile.getFileType().ordinal()));
 		parameterMap.put("outputFormat", String.valueOf(DataFileFormat.WFDB_16.ordinal()));
+		parameterMap.put("openTsdbHost", ResourceUtility.getOpenTsdbHost());
 		
 		LinkedHashMap<String, FSFile> filesMap = new LinkedHashMap<String, FSFile>();
 		
@@ -635,12 +633,12 @@ public class UploadManager extends Thread{
 			
 			long conversionTime = java.lang.System.currentTimeMillis();
 			
-			boolean useWS = !"Portlet".equals(conversionStrategy);
+			boolean executeInPortlet = "Portlet".equals(ResourceUtility.getOpenTsdStrategy());
 			
-			if(useWS){
-				extractDataByWS();
-			}else{
+			if(executeInPortlet){
 				extractDataByPortlet();
+			}else{
+				extractDataByWS();
 			}
 			
 			conversionTime = java.lang.System.currentTimeMillis() - conversionTime;
