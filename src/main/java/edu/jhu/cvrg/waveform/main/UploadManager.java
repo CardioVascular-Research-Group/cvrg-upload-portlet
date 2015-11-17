@@ -698,7 +698,7 @@ public class UploadManager extends Thread{
 		String recordName = extractRecordName(fileName);
 
 		try {
-			if (!fileTree.fileExistsInFolder(fileName)) {
+			if (!fileTree.fileExistsInFolder(recordName)) {
 				// The new 5th parameter has been added for character encoding,
 				// specifically for XML files. If null is passed in,
 				// the function will use UTF-8 by default
