@@ -6,7 +6,7 @@
 	<artifactId>cvrg-upload-portlet</artifactId>
 	<packaging>war</packaging>
 	<name>cvrg-upload-portlet Portlet</name>
-	<version>1.0.3.1-SNAPSHOT</version>
+	<version>1.0.3.2-SNAPSHOT</version>
 
 	<parent>
     		<groupId>edu.jhu.cvrg</groupId>
@@ -30,7 +30,7 @@
 		<dependency>
 			<groupId>edu.jhu.cvrg</groupId>
 	  		<artifactId>cvrg-dataStorage</artifactId>
-	  		<version>1.4-SNAPSHOT</version>
+	  		<version>1.5-SNAPSHOT</version>
 	  		
 	  		<exclusions>
 		        <exclusion>
