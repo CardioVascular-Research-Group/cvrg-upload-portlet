@@ -30,6 +30,7 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.GregorianCalendar;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -187,9 +188,9 @@ public class UploadManager extends Thread{
 			List<Long> filesId = new ArrayList<Long>();
 			filesId.add(ecgFile.getFile().getId());
 			if(ecgFile.getAuxiliarFiles() != null){
-				for (int i = 0; i <  ecgFile.getAuxiliarFiles().values().size(); i++) {
-					FSFile auxFile = ecgFile.getAuxiliarFiles().values().iterator().next();
-					filesId.add(auxFile.getId());				
+				Iterator<FSFile> iterator = ecgFile.getAuxiliarFiles().values().iterator();
+				for (int i = 0; i <  ecgFile.getAuxiliarFiles().size(); i++) {
+					filesId.add(iterator.next().getId());				
 				}
 			}
 			
@@ -447,7 +448,7 @@ public class UploadManager extends Thread{
 		String ext2 = null;
 		String message = null;
 		
-		if(FileExtension.HEA.equals(fileExtension)){
+		if(FileExtension.HEA.name().equals(fileExtension.name())){
 			ext1 = ".dat";
 			aux1 = fileStorer.getFileByNameAndFolder(ecgFile.getFile().getParentId(), fileNameToFind + ext1, false);
 			ecgFile.addAuxFile(FileExtension.DAT, aux1);
@@ -460,7 +461,7 @@ public class UploadManager extends Thread{
 				ecgFile.addAuxFile(FileExtension.XYZ, aux2);
 			}
 			
-		}else if(FileExtension.DAT.equals(fileExtension)){
+		}else if(FileExtension.DAT.name().equals(fileExtension.name())){
 			ext1 = ".hea";
 			aux1 = fileStorer.getFileByNameAndFolder(ecgFile.getFile().getParentId(), fileNameToFind + ext1, false);
 			ecgFile.addAuxFile(FileExtension.HEA, aux1);
@@ -473,7 +474,7 @@ public class UploadManager extends Thread{
 				ecgFile.addAuxFile(FileExtension.XYZ, aux2);
 			}
 			
-		}else if(FileExtension.XYZ.equals(fileExtension)){
+		}else if(FileExtension.XYZ.name().equals(fileExtension.name())){
 			ext1 = ".hea";
 			haveThreeFiles = true;
 			aux1 = fileStorer.getFileByNameAndFolder(ecgFile.getFile().getParentId(), fileNameToFind + ext1, false);
@@ -698,7 +699,7 @@ public class UploadManager extends Thread{
 		String recordName = extractRecordName(fileName);
 
 		try {
-			if (!fileTree.fileExistsInFolder(recordName)) {
+			if (!fileTree.fileExistsInFolder(fileName)) {
 				// The new 5th parameter has been added for character encoding,
 				// specifically for XML files. If null is passed in,
 				// the function will use UTF-8 by default

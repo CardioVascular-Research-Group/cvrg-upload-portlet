@@ -6,7 +6,7 @@
 	<artifactId>cvrg-upload-portlet</artifactId>
 	<packaging>war</packaging>
 	<name>cvrg-upload-portlet Portlet</name>
-	<version>1.0.3.2-SNAPSHOT</version>
+	<version>1.0.4.2-SNAPSHOT</version>
 
 	<parent>
     		<groupId>edu.jhu.cvrg</groupId>
@@ -19,7 +19,7 @@
 		<dependency>
 			<groupId>edu.jhu.cvrg.waveform</groupId>
 			<artifactId>waveform-utilities</artifactId>
-			<version>1.4.0.3-SNAPSHOT</version>
+			<version>1.4.1.3-SNAPSHOT</version>
 			<exclusions>
 				<exclusion>
 					<artifactId>xercesImpl</artifactId>

@@ -22,14 +22,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TimeZone;
 
 import javax.annotation.PostConstruct;
 import javax.faces.application.FacesMessage;
@@ -47,13 +43,11 @@ import org.primefaces.model.UploadedFile;
 
 import com.liferay.portal.model.User;
 
-import edu.jhu.cvrg.data.dto.DocumentRecordDTO;
 import edu.jhu.cvrg.data.dto.UploadStatusDTO;
 import edu.jhu.cvrg.data.enums.UploadState;
 import edu.jhu.cvrg.data.factory.Connection;
 import edu.jhu.cvrg.data.factory.ConnectionFactory;
 import edu.jhu.cvrg.data.util.DataStorageException;
-import edu.jhu.cvrg.timeseriesstore.opentsdb.TimeSeriesStorer;
 import edu.jhu.cvrg.waveform.main.UploadManager;
 import edu.jhu.cvrg.waveform.model.FileTreeNode;
 import edu.jhu.cvrg.waveform.model.LocalFileTree;
