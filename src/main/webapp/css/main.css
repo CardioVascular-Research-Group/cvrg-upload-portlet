@@ -262,5 +262,5 @@ div.uploader{
 	height:100%;
 }
 div.uploader div.ui-fileupload-content{
-	height:91%;
+	min-height:91%;
 }
