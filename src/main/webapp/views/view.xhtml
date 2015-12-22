@@ -80,7 +80,7 @@
 		    	</p:layoutUnit>
 		    	
 		    	<p:layoutUnit position="center" header="Select files from your computer to upload and save" >
-			    	<h:form id="formFileUpload" enctype="multipart/form-data">
+			    	<h:form id="formFileUpload" enctype="multipart/form-data" style="height:100%">
 				    	<p:fileUpload id="uploader"
 				                      	allowTypes="/(\.|\/)(hea|dat|xyz|xml)$/"
 				                      	value="Facts" 
@@ -91,7 +91,8 @@
 				              	        widgetVar="waveformFileUpload"
 				                  	    fileUploadListener="#{fileUploadBacking.handleFileUpload}"
 				                      	description="Select Images" 
-				                      	onstart="startListening();"/>
+				                      	onstart="startListening();"
+				                      	styleClass="uploader"/>
                    	</h:form>
 			    </p:layoutUnit>
 			    

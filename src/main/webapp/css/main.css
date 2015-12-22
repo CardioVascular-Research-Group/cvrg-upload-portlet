@@ -258,3 +258,9 @@ table.ui-selectoneradio td{
 td.strategyColumn{
 	padding: 0px 10px 0px 0px;
 }
+div.uploader{
+	height:100%;
+}
+div.uploader div.ui-fileupload-content{
+	height:91%;
+}
