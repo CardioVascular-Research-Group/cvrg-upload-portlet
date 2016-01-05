@@ -16,10 +16,19 @@ import edu.jhu.cvrg.timeseriesstore.exceptions.OpenTSDBException;
 import edu.jhu.cvrg.timeseriesstore.opentsdb.TimeSeriesStorer;
 import edu.jhu.cvrg.waveform.utility.ResourceUtility;
 
+/**
+ * Class to remove all contents of a subject. DATABASE and TIMESERIES DATA.
+ * 
+ * @author avilard4
+ *
+ */
 public class DeleteSubjectThread extends Thread{
 	
 	private static Logger log = Logger.getLogger(DeleteSubjectThread.class);
 	
+	/**
+	 * Document to be deleted
+	 */
 	private DocumentRecordDTO document;
 	private Connection db;
 	
